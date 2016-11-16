@@ -1,0 +1,303 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+	<script type="text/javascript">
+	window.onload = function () {
+
+		var filename = "2016-10-21-18-29";
+		var parameter = "max";
+		var chart = new CanvasJS.Chart("chartContainer",{
+			zoomEnabled: true,
+			title :{
+				text: "Real Time GA Monitor " + parameter + " " + filename,
+			},		
+ 			axisX:{
+   				viewportMinimum: 0,
+   				//viewportMaximum: 2000
+ 			},
+			axisY: {
+				includeZero:false,
+				title: "Score",
+			},	
+			data: [{
+				type: "spline",
+				showInLegend: true,
+				dataPoints: [], 
+			},
+			{
+                                type: "spline",
+                                showInLegend: true,
+                                dataPoints: []
+                        },
+                        {
+                                type: "spline",
+                                showInLegend: true,
+                                dataPoints: []
+                        },
+                        {
+                                type: "spline",
+                                showInLegend: true,
+                                dataPoints: []
+                        },
+                        {
+                                type: "spline",
+                                showInLegend: true,
+                                dataPoints: []
+                        },
+                        {
+                                type: "spline",
+                                showInLegend: true,
+                                dataPoints: []
+                        },
+                        {
+                                type: "spline",
+                                showInLegend: true,
+                                dataPoints: []
+                        },
+                        {
+                                type: "spline",
+                                showInLegend: true,
+                                dataPoints: []
+                        }
+			],
+			legend: {
+				cursor: "pointer",
+				itemclick: function (e) {
+					if (typeof(e.dataSeries.visible) === "undefined" || e.dataSeries.visible) {
+						e.dataSeries.visible = false;
+					} else {
+						e.dataSeries.visible = true;
+					}
+					chart.render();
+				}
+			}
+
+		});
+
+		var updateInterval = 20000;
+		var val_holder = 0;
+		var mytype = {"parameter": parameter, "filename": filename};
+		/* keep track of how many data we have read */
+		var count = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0}
+		var updateChart = function () {
+	        var yVal;
+		mytype.parameter = parameter;
+		mytype.filename = filename;	
+		$.ajax({
+		  type: "POST",
+		  url: "/refresh",
+		  async: false,
+		  contentType: "application/json",
+		  data: JSON.stringify(mytype),
+		  dataType: "json",
+		  success: function (data) {
+		    yVal = data; 
+			//dps = [];
+			for (var j = 1; j < 9; j++) {
+				if(yVal.hasOwnProperty(j)){
+					if(yVal[j].length > count[j]){
+						for (k=count[j]; k<yVal[j].length; k++){
+							//dp1.push({y:yVal[j][k]});
+							count[j]++;
+							chart.options.data[j-1].dataPoints.push({x:k,y:yVal[j][k]});
+}
+					}	
+				}	
+				
+				
+			};
+			var dt = new Date();
+			var utcDate = dt.toUTCString();
+			$("#timestamp").text("Last update: " + utcDate);
+			chart.options.title.text = "Real Time GA Monitor " + parameter + " " + filename;
+
+			chart.render();
+		  }
+		});		
+		};
+
+		var issueKill = function() {
+		  var credential = $('#password').val();
+		  var params = {"instance": "all", "credential": credential};
+		  $.ajax({
+			  type: "POST",
+			  url: "/kill",
+			  async: true,
+			  contentType: "application/json",
+			  data: JSON.stringify(params),
+			  dataType: "json",
+			  success: function (data) {
+				if (data["status"] == "success"){
+					// refresh page on success, so new GA instance will be updated
+					location.reload();	
+				}
+				else {
+					$("#passwordsNoMatch").show();
+				}
+			  }
+		});			
+		};
+
+		// generates first set of dataPoints
+		updateChart(); 
+		
+		// update chart after specified time. 
+		setInterval(function(){updateChart()}, updateInterval); 
+		
+		var emptyall = function() {
+			count = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0};
+			for (var k=0; k<8; k++){
+				chart.options.data[k].dataPoints = [];
+			}
+		}		
+
+
+
+		$('#killButton').on('click', function() {
+			emptyall();
+			issueKill();
+			//updateChart();
+		});
+
+		$('#maxButton').on('click', function() {
+			//mytype = {"parameter": "max"};
+			parameter = "max";
+			emptyall();
+			updateChart();
+		});
+		$('#avgButton').on('click', function() {
+			//mytype = {"parameter": "avg"};
+			parameter = "avg";
+			emptyall();
+			updateChart();
+		});
+		$('#hammingButton').on('click', function() {
+			//mytype = {"parameter": "hamming"};
+			parameter = "hamming";
+			emptyall();
+			updateChart();
+		});
+
+		$('.dropDownListItem').click(function (e) {
+		        var name = e.currentTarget;
+			console.log(name.text);
+			filename = name.text;
+			emptyall();
+			updateChart();	
+    			//console.log(name.getAttribute("data-name"));
+		});
+
+
+	}
+	</script>
+	<script type="text/javascript" src="{{jqurl}}"></script>
+	<script type="text/javascript" src="{{jsurl}}"></script>
+<script src="https://www.atlasestateagents.co.uk/javascript/tether.min.js"></script><!-- Tether for Bootstrap --> 
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/js/bootstrap.min.js" integrity="sha384-BLiI7JTZm+JWlgKa0M0kGRpJbF2J8q+qreVrKBC47e3K6BW78kGLrCkeRX6I9RoK" crossorigin="anonymous"></script>	
+	<!-- Latest compiled and minified CSS -->
+<link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/flatly/bootstrap.min.css" rel="stylesheet" integrity="sha384-+ENW/yibaokMnme+vBLnHMphUYxHs34h9lpdbSLuAwGkOKFRl4C34WkjazBtb7eT" crossorigin="anonymous">
+<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+<style>
+.div-inline{
+    
+    display:inline-block;
+}
+</style>
+
+</head>
+<body>
+
+    <div class = "container">
+
+
+    <nav class="navbar navbar-default ">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">PacWar Monitor Dashboard</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse" aria-expanded="false" style="height: 1px;">
+          <ul class="nav navbar-nav">
+
+            <li class="active"><a href="#">Home</a></li>
+
+          </ul>
+          <!-- <ul class="nav navbar-nav navbar-right">
+            <li><a href="../navbar/">Default</a></li>
+            <li><a href="../navbar-static-top/">Static top</a></li>
+            <li class="active"><a href="./">Fixed top <span class="sr-only">(current)</span></a></li>
+          </ul> -->
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+<div class="row">
+ <div class="col-md-6">
+<button id = "maxButton" type="button" class="btn btn-default" aria-label="Left Align">
+max</button>
+<button id = "avgButton" type="button" class="btn btn-default" aria-label="Left Align">
+avg</button>
+<button id = "hammingButton" type="button" class="btn btn-default" aria-label="Left Align">
+hamming</button>
+
+
+<div class="dropdown  div-inline">
+  <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Select group of GA instances 
+  <span class="caret"></span></button>
+  <ul class="dropdown-menu">
+  {% for entry in entries %}
+    <li><a class="dropDownListItem" href="#">{{ entry|safe }}</a></li>
+  {% endfor %}
+  </ul>
+</div>
+</div>
+
+ <div class="col-md-6">
+<div class="input-group ">
+	  <span class="input-group-btn">
+        	<button id = "killButton" type="button" class="btn btn-danger" data-toggle="tooltip" data-placement="top" title="Authorized User Only" aria-label="Left Align">
+		Kill And Restart</button>
+	  </span>
+	<input type="text" class="form-control" id = "password" placeholder="Your Credential">
+</div>
+</div>
+</div>
+
+<div style="display:none" class="alert alert-warning" role="alert" id="passwordsNoMatch">
+  <button type="button" class="close" onclick="$('.alert').hide()"  aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+  </button>
+  <span>
+  <strong>Wrong Credential</strong>
+  </span>
+</div>
+
+
+	<div id="chartContainer" style="height: 450px; width:100%;">
+	</div>
+	<h3 id="timestamp"></h3>
+	<br><br>
+
+
+<p class="text-info" align="justify">What is this? This is a dashboard that visualizes key parameters (max score, avg score, avg hamming distance) during every iteration of 8 concurrent genetic algorithms running on an 8 CPU AWS EC2 instance. The dashboard makes it easy to understand dynamics of genetic algorithm, and shows times of convergence and plateaus.</p>
+
+<p class="text-info" align="justify">What technologies do I use? Python logging module, flask, jinja2, bootstrap, jquery, canvasjs. (Full-Stack? kinda)</p>
+
+<p class="text-info" align="justify">What's more? Advanced features can be added to enable human intervention, dynamic parameter tuning, and early termination of any script.</p>
+
+	
+ </div> 
+<!--  Set up the footer -->
+    <div class = "container footer">
+      <br>
+      <p class = "text-center" style = "color:black">Copyright 2016© - Site designed by Zhouhan Chen</p>
+    </div>  
+</body>
+</html>

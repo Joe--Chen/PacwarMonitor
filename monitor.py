@@ -9,15 +9,16 @@ import os
 import os.path
 import subprocess
 
-DIR = '/home/ec2-user/PacWar/python/log/'
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)
 
-def get_credential():
-    with open('credential.txt', 'r') as f:
+def get_config():
+    with open('config.txt', 'r') as f:
+        contents = []
         for line in f:
-            return line.strip()   
-CREDENTIAL = get_credential()
+            contents.append(line.strip())
+        return contents[0], contents[1], contents[2]
+CREDENTIAL, LOG_DIR, DIR = get_config()
 
 @app.route('/')
 def monitor():
@@ -35,7 +36,7 @@ def refresh():
     print parameter
     dic = {}
     for i in range(1,9):
-        if os.path.isfile(DIR + filename + '_instance_'  + str(i) + ".log"):
+        if os.path.isfile(LOG_DIR + filename + '_instance_'  + str(i) + ".log"):
             dic[i] = parse_file(filename + '_instance_'  + str(i), parameter = parameter)
     return json.dumps(dic)
 
@@ -52,16 +53,15 @@ def kill():
 
     instance = jsonData['instance']
     if instance == 'all':
-        p = subprocess.Popen('pkill  -f run_pacwar', cwd='/home/ec2-user/PacWar/python',shell=True)
-        p = subprocess.Popen('./batch_run.sh', cwd='/home/ec2-user/PacWar/python',shell=True)        
+        p = subprocess.Popen('pkill  -f run_pacwar', cwd=DIR,shell=True)
+        p = subprocess.Popen('./batch_run.sh', cwd=DIR,shell=True)        
     else:
-        p = subprocess.Popen('', cwd='/home/ec2-user/PacWar/python',shell=True)
+        p = subprocess.Popen('', cwd=DIR,shell=True)
     return json.dumps({"status": "success"})
 
 def get_all_prefix():
-    DIR = '/home/ec2-user/PacWar/python/log/'
     res = set()
-    for root, dirs, filenames in os.walk(DIR):
+    for root, dirs, filenames in os.walk(LOG_DIR):
         for fn in filenames:
             if len(fn) > 16:
                 res.add(fn[:16])
@@ -71,7 +71,7 @@ def parse_file(filename, parameter='max'):
     cur_key = None
     result = []
     count = 0
-    with open(DIR + filename + ".log", "r") as f:
+    with open(LOG_DIR + filename + ".log", "r") as f:
         for line in f:
             if "INFO" in line:
                 res = line.rstrip()[10:].split(",")

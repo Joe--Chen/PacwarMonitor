@@ -1,0 +1,3 @@
+yourpassword
+/YourLogDirectory/PacWar/python/log/
+/YourPythonDirectory/PacWar/python/

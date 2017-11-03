@@ -2,6 +2,8 @@
 # PacwarMonitor
 Web application to monitor genetic algorithm
 
+![Alt Text](https://github.com/Joe--Chen/PacwarMonitor/blob/master/image/screenshot.gif)
+
 ## Installation
 1. pip install flask
 2. pip install gunicorn (optional)
